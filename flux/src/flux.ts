@@ -345,12 +345,14 @@ fi`,
    * @param source - Repository-Verzeichnis (z.B. --source=.)
    * @param rawDirs - Verzeichnisse für direkte kubeconform-Validierung (default: ["clusters/"])
    * @param kustomizeDirs - Verzeichnisse für kustomize build + kubeconform (default: ["tenants/"])
+   * @param excludeFilePatterns - Regex-Muster für Dateinamen, die kubeconform überspringen soll (z.B. ["kustomizeconfig.yaml"])
    */
   @func()
   async validate(
     source: Directory,
     rawDirs: string[] = ["clusters/"],
     kustomizeDirs: string[] = ["tenants/"],
+    excludeFilePatterns: string[] = [],
   ): Promise<string> {
     const workdir = "/src"
 
@@ -384,6 +386,7 @@ fi`,
       "-schema-location", "default",
       "-schema-location", "https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json",
       "-ignore-missing-schemas",
+      ...excludeFilePatterns.map(p => `-ignore-filename-pattern ${p}`),
     ].join(" ")
 
     const rawValidation = rawDirs
