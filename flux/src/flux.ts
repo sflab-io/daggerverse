@@ -333,6 +333,90 @@ fi`,
     return parts.join("\n")
   }
 
+  /**
+   * Statische Validierung eines Repositories: YAML-Linting + Manifest-Schema-Validierung.
+   *
+   * Schritt 1: yamllint — YAML-Syntax-Validierung aller Manifests
+   * Schritt 2: kubeconform — Schema-Validierung der Manifests in rawDirs
+   * Schritt 3: kustomize build | kubeconform — Schema-Validierung aller kustomization.yaml in kustomizeDirs
+   *
+   * Nutzt `.yamllint.yaml` aus dem Repository.
+   *
+   * @param source - Repository-Verzeichnis (z.B. --source=.)
+   * @param rawDirs - Verzeichnisse für direkte kubeconform-Validierung (default: ["clusters/"])
+   * @param kustomizeDirs - Verzeichnisse für kustomize build + kubeconform (default: ["tenants/"])
+   */
+  @func()
+  async validate(
+    source: Directory,
+    rawDirs: string[] = ["clusters/"],
+    kustomizeDirs: string[] = ["tenants/"],
+  ): Promise<string> {
+    const workdir = "/src"
+
+    const base: Container = await dag
+      .container()
+      .from("alpine:3.20")
+      .withExec(["apk", "add", "--no-cache", "python3", "py3-pip", "curl", "bash"])
+      .withExec(["pip3", "install", "--break-system-packages", "yamllint"])
+      .withExec([
+        "sh", "-c",
+        `curl -sL "https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz" \
+          | tar -xz -C /usr/local/bin kubeconform`,
+      ])
+      .withExec([
+        "sh", "-c",
+        `curl -sL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.4.3/kustomize_v5.4.3_linux_amd64.tar.gz" \
+          | tar -xz -C /usr/local/bin kustomize`,
+      ])
+      .sync()
+
+    const container = base
+      .withDirectory(workdir, source)
+      .withWorkdir(workdir)
+
+    const yamllintOutput = await container
+      .withExec(["yamllint", "-c", ".yamllint.yaml", "."])
+      .stdout()
+
+    const kubeconformFlags = [
+      "-kubernetes-version", "1.32.0",
+      "-schema-location", "default",
+      "-schema-location", "https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json",
+      "-ignore-missing-schemas",
+    ].join(" ")
+
+    const rawValidation = rawDirs
+      .map(dir => `echo "==> Validating raw manifests in ${dir}..."\nkubeconform ${kubeconformFlags} ${dir} || EXIT_CODE=1`)
+      .join("\n\n")
+
+    const kustomizeValidation = kustomizeDirs
+      .map(dir =>
+        `echo ""\necho "==> Validating kustomize builds in ${dir}..."\n` +
+        `while IFS= read -r f; do\n` +
+        `  kdir=$(dirname "$f")\n` +
+        `  echo "  --> Building: $kdir"\n` +
+        `  kustomize build "$kdir" | kubeconform ${kubeconformFlags} - || EXIT_CODE=1\n` +
+        `done < <(find ${dir} -name "kustomization.yaml" -o -name "kustomization.yml")`
+      )
+      .join("\n\n")
+
+    const manifestOutput = await container
+      .withExec([
+        "sh", "-c",
+        `EXIT_CODE=0\n\n${rawValidation}\n\n${kustomizeValidation}\n\nexit $EXIT_CODE`,
+      ])
+      .stdout()
+
+    return [
+      "=== Step 1: YAML Linting ===",
+      yamllintOutput.trim() || "No issues found",
+      "",
+      "=== Step 2+3: Manifest Schema Validation ===",
+      manifestOutput,
+    ].join("\n")
+  }
+
   private async cosignArtifact(
     registry: string,
     gitlabUser: string,
