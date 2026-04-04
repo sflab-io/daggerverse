@@ -1,0 +1,19 @@
+[tools]
+dagger = "0.19.3"
+
+[env]
+PROJECT_NAME = "{{ config_root | basename }}"
+
+_.file = [
+  { path = "{{env.HOME}}/.env", optional = true },
+  { path = ".env", optional = true },
+  { path = ".creds.env.yaml", redact = true }
+]
+
+[hooks]
+enter = [
+  'echo ""',
+  'echo "[MISE] Setup $PROJECT_NAME project..."',
+  #
+  'mise i -q',
+]
