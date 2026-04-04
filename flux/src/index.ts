@@ -13,29 +13,31 @@
  * rest is a long description with more detail on the module's purpose or usage,
  * if appropriate. All modules should have a short description.
  */
-import { dag, Container, Directory, object, func } from "@dagger.io/dagger"
+import { dag, Container, Secret, Directory, object, func } from "@dagger.io/dagger"
+import { FluxFunctions } from "./flux_functions"
 
 @object()
 export class Flux {
+  
   /**
-   * Returns a container that echoes whatever string argument is provided
+   * Flux-spezifische Operationen
    */
-  @func()
-  containerEcho(stringArg: string): Container {
-    return dag.container().from("alpine:latest").withExec(["echo", stringArg])
+  flux(): FluxFunctions {
+    return new FluxFunctions()
   }
 
-  /**
-   * Returns lines that match a pattern in the files of the provided Directory
-   */
-  @func()
-  async grepDir(directoryArg: Directory, pattern: string): Promise<string> {
-    return dag
-      .container()
-      .from("alpine:latest")
-      .withMountedDirectory("/mnt", directoryArg)
-      .withWorkdir("/mnt")
-      .withExec(["grep", "-R", pattern, "."])
-      .stdout()
-  }
+  // @func()
+  // async pushArtifact(
+  //   source: Directory,
+  //   components: string[],
+  //   gitUrl: string,
+  //   gitlabUser: string,
+  //   gitlabToken: Secret,
+  //   gitRevision: string,
+  //   version: string,
+  //   tag: string = "latest",
+  //   sign: boolean = false,
+  // ): Promise<string> {
+  //   return this.flux().pushArtifact(...)
+  // }
 }
