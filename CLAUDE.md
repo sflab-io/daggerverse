@@ -4,7 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-This is a [Daggerverse](https://daggerverse.dev) repository containing reusable Dagger modules. Currently it contains one module: `flux/` — a Dagger TypeScript module for Flux CD operations (pushing OCI artifacts).
+This is a [Daggerverse](https://daggerverse.dev) repository containing reusable Dagger modules:
+
+- `flux/` — Dagger TypeScript module for Flux CD operations (bootstrap, OCI artifact push, manifest validation)
+- `ansible/` — Dagger TypeScript module for Ansible operations (in early development)
 
 ## Tools & Setup
 
@@ -26,6 +29,8 @@ cd flux
 
 # Call a function
 dagger call push-artifact --help
+dagger call validate --help
+dagger call bootstrap --help
 
 # Run the Dagger development shell
 dagger develop
@@ -33,10 +38,17 @@ dagger develop
 
 ### Module structure
 
-- `flux/src/index.ts` — Main module class `Flux`, exports top-level `@func()` functions that delegate to `Flux as FluxFunctions`
-- `flux/src/flux.ts` — `Flux` class with the actual implementations
+- `flux/src/flux.ts` — `Flux` class with all implementations (`bootstrap`, `pushArtifact`, `validate`)
 - `flux/sdk/` — Auto-generated Dagger TypeScript SDK (do not edit manually)
 - `flux/dagger.json` — Module manifest (name, engine version, SDK)
+
+### Exposed functions
+
+| Function | Description |
+|---|---|
+| `bootstrap` | Installs Flux Operator on an existing Kubernetes cluster via Helm, creates secrets, optionally applies manifests and waits for readiness |
+| `pushArtifact` | Pushes OCI artifacts to a registry (single or multi-component mode), optionally signs with Cosign |
+| `validate` | Lints YAML with yamllint and validates manifests with kubeconform + kustomize |
 
 ### TypeScript conventions
 
@@ -55,3 +67,24 @@ dagger develop
 ```
 
 This updates `flux/sdk/client.gen.ts` and `flux/dagger.json`.
+
+## Module: ansible/
+
+### Running Dagger functions
+
+```bash
+cd ansible
+
+# Call a function
+dagger call container-echo --string-arg="hello"
+dagger call grep-dir --directory-arg=. --pattern="pattern"
+
+# Run the Dagger development shell
+dagger develop
+```
+
+### Module structure
+
+- `ansible/src/index.ts` — `Ansible` class (currently scaffold with `containerEcho` and `grepDir` functions)
+- `ansible/sdk/` — Auto-generated Dagger TypeScript SDK (do not edit manually)
+- `ansible/dagger.json` — Module manifest (name, engine version, SDK)
