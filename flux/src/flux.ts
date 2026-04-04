@@ -20,12 +20,12 @@ export class Flux {
    * @param gitlabUser - GitLab username (e.g. abes140377)
    * @param gitlabToken - GitLab Personal Access Token (as a Dagger Secret)
    * @param sopsAgeKey - AGE key for SOPS decryption (as a Dagger Secret)
-   * @param k3sService - Optional k3s service binding for internal cluster access
+   * @param k3SService - Optional k3s service binding for internal cluster access
    * @param clusterDir - Optional directory containing cluster manifests (enables steps 5+6)
    * @param timeout - Timeout for waiting for FluxInstance readiness (default: 2m)
    */
   @func()
-  async bootstrap(kubeconfig: File, gitlabUser: string, gitlabToken: Secret, sopsAgeKey: Secret, k3sService?: Service, clusterDir?: Directory, timeout: string = "2m"): Promise<string> {
+  async bootstrap(kubeconfig: File, gitlabUser: string, gitlabToken: Secret, sopsAgeKey: Secret, k3SService?: Service, clusterDir?: Directory, timeout: string = "2m"): Promise<string> {
     const kubeconfigPath = "/tmp/kubeconfig"
     const fluxImage = "ghcr.io/fluxcd/flux-cli:v2.8.3"
     const helmImage = "dtzar/helm-kubectl:3.17"
@@ -37,8 +37,8 @@ export class Flux {
       .withFile(kubeconfigPath, kubeconfig, { permissions: 0o644 })
       .withEnvVariable("KUBECONFIG", kubeconfigPath)
 
-    if (k3sService) {
-      fluxCheckContainer = fluxCheckContainer.withServiceBinding("kubernetes", k3sService)
+    if (k3SService) {
+      fluxCheckContainer = fluxCheckContainer.withServiceBinding("kubernetes", k3SService)
     }
 
     const fluxCheckOutput = await fluxCheckContainer
@@ -52,8 +52,8 @@ export class Flux {
       .withFile(kubeconfigPath, kubeconfig, { permissions: 0o644 })
       .withEnvVariable("KUBECONFIG", kubeconfigPath)
 
-    if (k3sService) {
-      helmContainer = helmContainer.withServiceBinding("kubernetes", k3sService)
+    if (k3SService) {
+      helmContainer = helmContainer.withServiceBinding("kubernetes", k3SService)
     }
 
     const helmOutput = await helmContainer
@@ -76,8 +76,8 @@ export class Flux {
       .withEnvVariable("CACHE_BUST", new Date().toISOString())
       .withSecretVariable("GITLAB_TOKEN", gitlabToken)
 
-    if (k3sService) {
-      glcrSecretContainer = glcrSecretContainer.withServiceBinding("kubernetes", k3sService)
+    if (k3SService) {
+      glcrSecretContainer = glcrSecretContainer.withServiceBinding("kubernetes", k3SService)
     }
 
     const glcrSecretOutput = await glcrSecretContainer
@@ -100,8 +100,8 @@ export class Flux {
       .withEnvVariable("CACHE_BUST", new Date().toISOString())
       .withSecretVariable("SOPS_AGE_KEY", sopsAgeKey)
 
-    if (k3sService) {
-      sopsSecretContainer = sopsSecretContainer.withServiceBinding("kubernetes", k3sService)
+    if (k3SService) {
+      sopsSecretContainer = sopsSecretContainer.withServiceBinding("kubernetes", k3SService)
     }
 
     const sopsSecretOutput = await sopsSecretContainer
@@ -138,8 +138,8 @@ export class Flux {
         .withEnvVariable("CACHE_BUST", new Date().toISOString())
         .withDirectory("/manifests", clusterDir)
 
-      if (k3sService) {
-        applyContainer = applyContainer.withServiceBinding("kubernetes", k3sService)
+      if (k3SService) {
+        applyContainer = applyContainer.withServiceBinding("kubernetes", k3SService)
       }
 
       const applyOutput = await applyContainer
@@ -157,8 +157,8 @@ export class Flux {
         .withEnvVariable("KUBECONFIG", kubeconfigPath)
         .withEnvVariable("CACHE_BUST", new Date().toISOString())
 
-      if (k3sService) {
-        waitContainer = waitContainer.withServiceBinding("kubernetes", k3sService)
+      if (k3SService) {
+        waitContainer = waitContainer.withServiceBinding("kubernetes", k3SService)
       }
 
       const waitOutput = await waitContainer
