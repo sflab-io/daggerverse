@@ -33,8 +33,8 @@ dagger develop
 
 ### Module structure
 
-- `flux/src/index.ts` — Main module class `Flux`, exports top-level `@func()` functions that delegate to `FluxFunctions`
-- `flux/src/flux_functions.ts` — `FluxFunctions` class with the actual implementations
+- `flux/src/index.ts` — Main module class `Flux`, exports top-level `@func()` functions that delegate to `Flux as FluxFunctions`
+- `flux/src/flux.ts` — `Flux` class with the actual implementations
 - `flux/sdk/` — Auto-generated Dagger TypeScript SDK (do not edit manually)
 - `flux/dagger.json` — Module manifest (name, engine version, SDK)
 
