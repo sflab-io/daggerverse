@@ -12,7 +12,7 @@ This is a [Daggerverse](https://daggerverse.dev) repository containing reusable 
 ## Tools & Setup
 
 Tool versions are managed via [mise](https://mise.jdx.dev):
-- Dagger `v0.19.3` (defined in `mise.toml`)
+- Dagger `v0.20.3` (defined in `mise.toml`)
 
 ```bash
 mise install   # Install required tools

@@ -1,5 +1,5 @@
 [tools]
-dagger = "0.19.3"
+dagger = "0.20.3"
 
 [env]
 PROJECT_NAME = "{{ config_root | basename }}"
