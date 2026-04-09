@@ -1,120 +1,37 @@
 /**
- * A generated module for Terragrunt functions
+ * A Dagger module for running Terragrunt commands in a containerized environment.
  *
- * This module has been generated via dagger init and serves as a reference to
- * basic module structure as you get started with Dagger.
+ * Provides a single flexible `run` function that executes any terragrunt command
+ * in the configured container with SSH agent forwarding and environment variable support.
  *
- * Two functions have been pre-created. You can modify, delete, or add to them,
- * as needed. They demonstrate usage of arguments and return types using simple
- * echo and grep commands. The functions can be called from the dagger CLI or
- * from one of the SDKs.
- *
- * The first line in this comment block is a short description line and the
- * rest is a long description with more detail on the module's purpose or usage,
- * if appropriate. All modules should have a short description.
+ * Example usage:
+ *   dagger call run --source=. --stack-dir=staging/my-stack --ssh-socket=/run/user/1000/ssh-agent.socket --command="stack run plan"
+ *   dagger call run --source=. --stack-dir=staging/my-stack --ssh-socket=/run/user/1000/ssh-agent.socket --command="stack run apply --non-interactive"
  */
 import { dag, Container, Directory, Socket, ReturnType, object, func } from "@dagger.io/dagger"
 
 @object()
 export class Terragrunt {
-  
-  /**
-   * Runs 'terragrunt stack run apply -- --auto-approve' in the given stack directory.
-   *
-   * @param source - The repository root directory to mount into the container
-   * @param stackDir - Relative path to the stack directory (e.g. "staging/proxmox-k3s-vms")
-   * @param sshSocket - SSH agent socket for git authentication (e.g. unix:///run/user/1000/ssh-agent.socket)
-   * @param envVars - Environment variables as KEY=VALUE strings (e.g. "AWS_ACCESS_KEY_ID=abc")
-   */
-  @func()
-  async stackApply(
-    source: Directory,
-    stackDir: string,
-    sshSocket: Socket,
-    envVars: string[],
-  ): Promise<string> {
-    const ctr = this.terragruntContainer(source, stackDir, sshSocket, envVars)
-      .withExec(["sh", "-c", "terragrunt stack run apply --non-interactive 2>&1"], { expect: ReturnType.Any })
-    return (await ctr.stdout()) + (await ctr.stderr())
-  }
 
   /**
-   * Runs 'terragrunt stack run plan' in the given stack directory.
+   * Runs an arbitrary terragrunt command in the given directory.
    *
    * @param source - The repository root directory to mount into the container
-   * @param stackDir - Relative path to the stack directory (e.g. "staging/proxmox-k3s-vms")
-   * @param sshSocket - SSH agent socket for git authentication (e.g. unix:///run/user/1000/ssh-agent.socket)
+   * @param stackDir - Relative path to the working directory (e.g. "staging/proxmox-k3s-vms")
+   * @param sshSocket - SSH agent socket for git authentication
+   * @param command - The terragrunt command to run (e.g. "stack run plan", "stack run apply --non-interactive")
    * @param envVars - Environment variables as KEY=VALUE strings (e.g. "AWS_ACCESS_KEY_ID=abc")
    */
   @func()
-  async stackPlan(
+  async run(
     source: Directory,
     stackDir: string,
     sshSocket: Socket,
-    envVars: string[],
+    command: string,
+    envVars: string[] = [],
   ): Promise<string> {
     const ctr = this.terragruntContainer(source, stackDir, sshSocket, envVars)
-      .withExec(["sh", "-c", "terragrunt stack run plan 2>&1"], { expect: ReturnType.Any })
-    return (await ctr.stdout()) + (await ctr.stderr())
-  }
-
-  /**
-   * Runs 'terragrunt stack run destroy --non-interactive' in the given stack directory.
-   *
-   * @param source - The repository root directory to mount into the container
-   * @param stackDir - Relative path to the stack directory (e.g. "staging/proxmox-k3s-vms")
-   * @param sshSocket - SSH agent socket for git authentication (e.g. unix:///run/user/1000/ssh-agent.socket)
-   * @param envVars - Environment variables as KEY=VALUE strings (e.g. "AWS_ACCESS_KEY_ID=abc")
-   */
-  @func()
-  async stackDestroy(
-    source: Directory,
-    stackDir: string,
-    sshSocket: Socket,
-    envVars: string[],
-  ): Promise<string> {
-    const ctr = this.terragruntContainer(source, stackDir, sshSocket, envVars)
-      .withExec(["sh", "-c", "terragrunt stack run destroy --non-interactive 2>&1"], { expect: ReturnType.Any })
-    return (await ctr.stdout()) + (await ctr.stderr())
-  }
-
-  /**
-   * Runs 'terragrunt stack generate' in the given stack directory.
-   *
-   * @param source - The repository root directory to mount into the container
-   * @param stackDir - Relative path to the stack directory (e.g. "staging/proxmox-k3s-vms")
-   * @param sshSocket - SSH agent socket for git authentication (e.g. unix:///run/user/1000/ssh-agent.socket)
-   * @param envVars - Environment variables as KEY=VALUE strings (e.g. "AWS_ACCESS_KEY_ID=abc")
-   */
-  @func()
-  async stackGenerate(
-    source: Directory,
-    stackDir: string,
-    sshSocket: Socket,
-    envVars: string[],
-  ): Promise<string> {
-    const ctr = this.terragruntContainer(source, stackDir, sshSocket, envVars)
-      .withExec(["sh", "-c", "terragrunt stack generate 2>&1"], { expect: ReturnType.Any })
-    return (await ctr.stdout()) + (await ctr.stderr())
-  }
-
-  /**
-   * Runs 'terragrunt stack output' in the given stack directory.
-   *
-   * @param source - The repository root directory to mount into the container
-   * @param stackDir - Relative path to the stack directory (e.g. "staging/proxmox-k3s-vms")
-   * @param sshSocket - SSH agent socket for git authentication (e.g. unix:///run/user/1000/ssh-agent.socket)
-   * @param envVars - Environment variables as KEY=VALUE strings (e.g. "AWS_ACCESS_KEY_ID=abc")
-   */
-  @func()
-  async stackOutput(
-    source: Directory,
-    stackDir: string,
-    sshSocket: Socket,
-    envVars: string[],
-  ): Promise<string> {
-    const ctr = this.terragruntContainer(source, stackDir, sshSocket, envVars)
-      .withExec(["sh", "-c", "terragrunt stack output 2>&1"], { expect: ReturnType.Any })
+      .withExec(["sh", "-c", `terragrunt ${command} 2>&1`], { expect: ReturnType.Any })
     return (await ctr.stdout()) + (await ctr.stderr())
   }
 
