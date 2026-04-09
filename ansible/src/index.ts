@@ -22,7 +22,7 @@ export class Ansible {
    * Install Ansible Galaxy collections from a requirements file.
    */
   @func()
-  async galaxyInstall(directory: Directory, requirementsFile: string): Promise<Container> {
+  async galaxyInstall(directory: Directory, requirementsFile: string = "requirements.yml"): Promise<Container> {
     return dag
       .container()
       .from("alpine/ansible:latest")
