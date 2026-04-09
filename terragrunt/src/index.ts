@@ -17,6 +17,7 @@ import { dag, Container, Directory, Socket, ReturnType, object, func } from "@da
 
 @object()
 export class Terragrunt {
+  
   /**
    * Runs 'terragrunt stack run apply -- --auto-approve' in the given stack directory.
    *
@@ -117,6 +118,16 @@ export class Terragrunt {
     return (await ctr.stdout()) + (await ctr.stderr())
   }
 
+  /**
+   * Helper function to create a container with the Terragrunt image and common configuration.
+   * This function is used by all the stack* functions to avoid code duplication.
+   *
+   * @param source - The repository root directory to mount into the container
+   * @param stackDir - Relative path to the stack directory (e.g. "staging/proxmox-k3s-vms")
+   * @param sshSocket - SSH agent socket for git authentication (e.g. unix:///run/user/1000/ssh-agent.socket)
+   * @param envVars - Environment variables as KEY=VALUE strings (e.g. "AWS_ACCESS_KEY_ID=abc")
+   * @returns A Container instance with the Terragrunt image and configuration
+   */
   private terragruntContainer(
     source: Directory,
     stackDir: string,
