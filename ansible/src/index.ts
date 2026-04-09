@@ -17,25 +17,19 @@ import { dag, Container, Directory, object, func } from "@dagger.io/dagger"
 
 @object()
 export class Ansible {
+  
   /**
-   * Returns a container that echoes whatever string argument is provided
+   * Install Ansible Galaxy collections from a requirements file.
    */
   @func()
-  containerEcho(stringArg: string): Container {
-    return dag.container().from("alpine:latest").withExec(["echo", stringArg])
-  }
-
-  /**
-   * Returns lines that match a pattern in the files of the provided Directory
-   */
-  @func()
-  async grepDir(directoryArg: Directory, pattern: string): Promise<string> {
+  async galaxyInstall(directory: Directory, requirementsFile: string): Promise<Container> {
     return dag
       .container()
-      .from("alpine:latest")
-      .withMountedDirectory("/mnt", directoryArg)
-      .withWorkdir("/mnt")
-      .withExec(["grep", "-R", pattern, "."])
-      .stdout()
+      .from("alpine/ansible:latest")
+      .withExec(["apk", "add", "--no-cache", "git"])
+      .withMountedDirectory("/work", directory)
+      .withWorkdir("/work")
+      .withExec(["ansible-galaxy", "collection", "install", "-r", requirementsFile])
+      .withExec(["ansible-galaxy", "role", "install", "-r", requirementsFile])
   }
 }
