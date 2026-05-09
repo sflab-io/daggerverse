@@ -1,6 +1,6 @@
 import { dag, Service, Container, File, Directory, Secret, object, func } from "@dagger.io/dagger"
 
-const FLUX_IMAGE = "ghcr.io/fluxcd/flux-cli:v2.8.3"
+const FLUX_IMAGE = "ghcr.io/fluxcd/flux-cli:v2.8.6"
 const COSIGN_VERSION = "v2.6.1"
 
 @object()
@@ -27,13 +27,12 @@ export class Flux {
   @func()
   async bootstrap(kubeconfig: File, gitlabUser: string, gitlabToken: Secret, sopsAgeKey: Secret, k3SService?: Service, clusterDir?: Directory, timeout: string = "2m"): Promise<string> {
     const kubeconfigPath = "/tmp/kubeconfig"
-    const fluxImage = "ghcr.io/fluxcd/flux-cli:v2.8.3"
     const helmImage = "dtzar/helm-kubectl:3.17"
 
     // Step 1: flux check --pre
     let fluxCheckContainer = dag
       .container()
-      .from(fluxImage)
+      .from(FLUX_IMAGE)
       .withFile(kubeconfigPath, kubeconfig, { permissions: 0o644 })
       .withEnvVariable("KUBECONFIG", kubeconfigPath)
 
